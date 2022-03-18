@@ -82,6 +82,28 @@ public class CSVUtilTest {
         assert listFilter.block().size() == 1;
     }
 
+    @Test
+    void reactive_filtrarRankingDeVictoriasPorNacionalidad() {
+        List<Player> list = CsvUtilFile.getPlayers();
+        Flux<Player> listFlux = Flux.fromStream(list.parallelStream()).cache();
+        Mono<Map<String, Collection<Player>>> listFilter = listFlux
+                .buffer(100)
+                .flatMap(player -> listFlux
+                        .filter(player2 -> player.stream()
+                                .anyMatch(player3 -> player3.national.equals(player2.national)))
+                ).distinct()
+                .sort((p, player) -> player.winners)
+                .collectMultimap(Player::getNational);
+
+        System.out.println(listFilter.block().size());
+        listFilter.block().forEach((pais, players) -> {
+            System.out.println("Pais: " + pais + "\n");
+            players.forEach(player -> {
+                System.out.println("Nombre Jugador: " + player.name + "\n" + " victorias: " + player.winners);
+            });
+            System.out.println("\n/*********************************************************/\n");
+        });
+    }
 
 
 }
